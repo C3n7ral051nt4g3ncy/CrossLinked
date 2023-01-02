@@ -50,7 +50,9 @@ def cli():
 
 def start_scrape(args):
     tmp = []
-    Log.info("Searching {} for valid employee names at \"{}\"".format(', '.join(args.engine), args.company_name))
+    Log.info(
+        f"""Searching {', '.join(args.engine)} for valid employee names at \"{args.company_name}\""""
+    )
 
     for search_engine in args.engine:
         c = CrossLinked(search_engine,  args.company_name, args.timeout, 3, args.proxy, args.jitter)
@@ -62,19 +64,18 @@ def start_scrape(args):
 def start_parse(args):
     tmp = []
     utils.file_exists(args.company_name, contents=False)
-    Log.info('Parsing employee names from \"{}\"'.format(args.company_name))
+    Log.info(f'Parsing employee names from \"{args.company_name}\"')
 
     with open(args.company_name) as f:
         csv_data = reader(f, delimiter=',')
         next(csv_data)
-        for r in csv_data:
-            tmp.append({'fname': r[2], 'lname': r[3]})
+        tmp.extend({'fname': r[2], 'lname': r[3]} for r in csv_data)
     return tmp
 
 
 def format_names(args, data, logger):
     tmp = []
-    Log.info('{} names collected'.format(len(data)))
+    Log.info(f'{len(data)} names collected')
 
     for d in data:
         fname = d['fname'].lower().strip()
@@ -83,7 +84,7 @@ def format_names(args, data, logger):
         if name not in tmp:
             logger.info(name)
             tmp.append(name)
-    Log.success("{} unique names added to {}!".format(len(tmp), args.outfile+".txt"))
+    Log.success(f"{len(tmp)} unique names added to {args.outfile}.txt!")
 
 
 def nformatter(nformat, first, last):
@@ -102,8 +103,12 @@ def main():
 
     try:
         if args.debug: setup_debug_logger(); debug_args(args)                                  # Setup Debug logging
-        txt = setup_file_logger(args.outfile+".txt", log_name="cLinked_txt", file_mode='w')    # names.txt overwritten
-        csv = setup_file_logger(args.outfile+".csv", log_name="cLinked_csv", file_mode='a')    # names.csv appended
+        txt = setup_file_logger(
+            f"{args.outfile}.txt", log_name="cLinked_txt", file_mode='w'
+        )
+        csv = setup_file_logger(
+            f"{args.outfile}.csv", log_name="cLinked_csv", file_mode='a'
+        )
 
         data = start_parse(args) if args.company_name.endswith('.csv') else start_scrape(args)
         format_names(args, data, txt) if len(data) > 0 else Log.warn('No results found')

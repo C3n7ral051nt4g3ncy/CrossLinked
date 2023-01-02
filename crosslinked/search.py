@@ -63,7 +63,7 @@ class CrossLinked:
 
                 if http_code != 200:
                     Log.info("{:<3} {} ({})".format(len(self.results), url, http_code))
-                    Log.warn('None 200 response, exiting search ({})'.format(http_code))
+                    Log.warn(f'None 200 response, exiting search ({http_code})')
                     break
 
                 self.page_parser(resp)
@@ -82,11 +82,10 @@ class CrossLinked:
             try:
                 self.results_handler(link)
             except Exception as e:
-                Log.warn('Failed Parsing: {}- {}'.format(link.get('href'), e))
+                Log.warn(f"Failed Parsing: {link.get('href')}- {e}")
 
     def link_parser(self, url, link):
-        u = {'url': url}
-        u['text'] = unidecode(link.text.split("|")[0].split("...")[0])  # Capture link text before trailing chars
+        u = {'url': url, 'text': unidecode(link.text.split("|")[0].split("...")[0])}
         u['title'] = self.parse_linkedin_title(u['text'])               # Extract job title
         u['fname'] = self.parse_linkedin_fname(u['text'])               # Extract first name
         u['lname'] = self.parse_linkedin_lname(u['text'])               # Extract last name
@@ -133,8 +132,9 @@ class CrossLinked:
         self.results.append(data)
         # Search results are logged to names.csv but names.txt is not generated until end to prevent duplicates
         logging.debug('  Fname: {:13} Lname: {:13} RawTxt: {}'.format(data['fname'], data['lname'], data['text']))
-        csv.info('"{}","{}","{}","{}","{}","{}","{}",'.format(self.runtime, self.search_engine, data['fname'],
-                                                           data['lname'], data['title'], data['url'], data['text']))
+        csv.info(
+            f""""{self.runtime}","{self.search_engine}","{data['fname']}","{data['lname']}","{data['title']}","{data['url']}","{data['text']}","""
+        )
 
 
 def get_statuscode(resp):
@@ -167,18 +167,15 @@ def web_request(url, timeout=3, proxies=[], **kwargs):
         p = r.prepare()
         return s.send(p, timeout=timeout, verify=False, proxies=get_proxy(proxies))
     except requests.exceptions.TooManyRedirects as e:
-        Log.fail('Proxy Error: {}'.format(e))
+        Log.fail(f'Proxy Error: {e}')
     except:
         pass
     return False
 
 
 def extract_links(resp):
-    links = []
     soup = BeautifulSoup(resp.content, 'lxml')
-    for link in soup.findAll('a'):
-        links.append(link)
-    return links
+    return list(soup.findAll('a'))
 
 
 def extract_subdomain(url):
